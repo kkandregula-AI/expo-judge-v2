@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Expo Judge Pro</title>
 <meta name="theme-color" content="#0f172a">
+<meta name="description" content="Mobile-first engineering expo judging system">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Expo Judge">
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
+<!-- Apple touch icons — required for iOS home screen icon -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
 <style>
@@ -164,15 +179,15 @@ body::before{
 /* ─── Main Area ─── */
 .page-header{
   display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+  margin-bottom:16px;flex-wrap:wrap;gap:10px;
 }
 .page-title-group{}
 .page-title{
   font-family:'Playfair Display',serif;
-  font-size:26px;font-weight:800;
+  font-size:20px;font-weight:800;
   line-height:1.2;color:var(--text);
 }
-.page-subtitle{font-size:13px;color:var(--text-muted);margin-top:4px}
+.page-subtitle{font-size:12px;color:var(--text-muted);margin-top:3px}
 .stall-badge{
   padding:8px 16px;border-radius:99px;
   background:var(--primary-glow);
@@ -526,7 +541,8 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">
-        <div class="logo-icon">🏆</div>
+        <img src="icons/icon-192x192.png" alt="Expo Judge Pro"
+             style="width:40px;height:40px;border-radius:10px;flex-shrink:0;box-shadow:0 4px 12px rgba(37,99,235,.4)">
         <div>
           <div>Expo Judge Pro</div>
           <div style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'DM Sans',sans-serif">v10.0</div>
@@ -600,8 +616,17 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   <main class="main">
     <div class="page-header">
       <div class="page-title-group">
-        <div class="page-title">Stall Evaluation</div>
-        <div class="page-subtitle">Engineering Expo Judging System</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="icons/icon-192x192.png" alt="Expo Judge Pro"
+               style="width:38px;height:38px;border-radius:9px;box-shadow:0 3px 10px rgba(37,99,235,.45);flex-shrink:0">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:7px">
+              <div class="page-title">Expo Judge Pro</div>
+              <div style="font-size:11px;font-weight:600;color:var(--primary);background:var(--primary-glow);padding:2px 7px;border-radius:99px">v10</div>
+            </div>
+            <div class="page-subtitle">Stall Evaluation · Engineering Expo</div>
+          </div>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div class="stall-badge" id="stallCounter">New Stall</div>
@@ -948,8 +973,21 @@ function restoreMeta(){
 }
 
 // ─── Data ───
-function loadEntries(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");}catch{return[];}}
-function saveEntries(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}
+function loadEntries(){
+  try{
+    const data=localStorage.getItem(STORAGE_KEY);
+    if(data){const p=JSON.parse(data);if(p&&p.length)return p;}
+    // Primary key empty — try auto-backup
+    const bk=localStorage.getItem(STORAGE_KEY+"_bk");
+    if(bk){const p=JSON.parse(bk);if(p&&p.length){localStorage.setItem(STORAGE_KEY,bk);return p;}}
+    return[];
+  }catch{return[];}
+}
+function saveEntries(arr){
+  const j=JSON.stringify(arr);
+  localStorage.setItem(STORAGE_KEY,j);
+  if(arr.length>0)localStorage.setItem(STORAGE_KEY+"_bk",j); // auto-backup, never auto-cleared
+}
 function loadDraft(){try{return JSON.parse(localStorage.getItem(DRAFT_KEY)||"null");}catch{return null;}}
 function clearDraft(){localStorage.removeItem(DRAFT_KEY);document.getElementById("draftNotice").style.display="none";}
 function saveDraft(){
@@ -1323,8 +1361,11 @@ function unlockJudgement(){
   toast("🔓 Reopened. Edit stalls freely, then go to Session → End Judgement again.","info",5000);
 }
 function clearAll(){
-  if(!confirm("Clear ALL saved stall feedback? This cannot be undone."))return;
-  [STORAGE_KEY,DRAFT_KEY,END_KEY,LOCK_KEY,META_KEY].forEach(k=>localStorage.removeItem(k));
+  const count=loadEntries().length;
+  if(!count){toast("No data to clear","info");return;}
+  const answer=window.prompt("This will permanently delete all "+count+" saved stall(s).\nType DELETE to confirm:");
+  if(answer!=="DELETE"){toast("Clear cancelled","info");return;}
+  [STORAGE_KEY,STORAGE_KEY+"_bk",DRAFT_KEY,END_KEY,LOCK_KEY,META_KEY].forEach(k=>localStorage.removeItem(k));
   currentIndex=-1;resetForm();renderAll();updateHeader();syncPdfState();applyLockState();
   document.getElementById("draftNotice").style.display="none";
   toast("All saved data cleared","danger");
@@ -1575,6 +1616,15 @@ function closePrintReport(){
 }
 
 init();
+
+// Register Service Worker for PWA / offline support
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
 </script>
 </body>
 </html>
