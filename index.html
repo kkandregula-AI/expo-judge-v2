@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Expo Judge Pro</title>
+<meta name="theme-color" content="#0f172a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f172a;
+  --surface:#1e293b;
+  --surface2:#263348;
+  --border:#334155;
+  --border-light:#3f526b;
+  --text:#f1f5f9;
+  --text-muted:#94a3b8;
+  --text-faint:#64748b;
+  --primary:#3b82f6;
+  --primary-dark:#2563eb;
+  --primary-glow:rgba(59,130,246,.18);
+  --gold:#f59e0b;
+  --gold-soft:rgba(245,158,11,.12);
+  --silver:#94a3b8;
+  --bronze:#cd7c3b;
+  --success:#10b981;
+  --success-soft:rgba(16,185,129,.12);
+  --warn:#f59e0b;
+  --warn-soft:rgba(245,158,11,.12);
+  --danger:#ef4444;
+  --danger-soft:rgba(239,68,68,.12);
+  --radius:14px;
+  --radius-lg:20px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --shadow-lg:0 8px 40px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* Background texture */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%,rgba(59,130,246,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%,rgba(245,158,11,.05) 0%,transparent 60%);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ─── Layout ─── */
+.app{display:flex;min-height:100vh;position:relative;z-index:1}
+.sidebar{
+  width:280px;
+  flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+}
+.main{flex:1;min-width:0;padding:24px 28px;max-width:860px}
+.right-col{width:320px;flex-shrink:0;padding:24px 20px 24px 0}
+
+/* ─── Sidebar ─── */
+.sidebar-header{
+  padding:22px 20px 18px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-logo{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:800;
+  color:var(--text);
+}
+.logo-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--primary-dark),#1d4ed8);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(37,99,235,.4);
+}
+.sidebar-meta{padding:16px 20px;border-bottom:1px solid var(--border)}
+.meta-label{font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.meta-field{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:13px;
+  color:var(--text);
+  width:100%;
+  font-family:'DM Sans',sans-serif;
+  margin-bottom:8px;
+  transition:.15s;
+}
+.meta-field:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+.meta-field::placeholder{color:var(--text-faint)}
+
+/* Score Summary */
+.sidebar-scores{padding:16px 20px;border-bottom:1px solid var(--border)}
+.score-circle-wrap{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.score-circle{
+  width:72px;height:72px;border-radius:50%;
+  background:conic-gradient(var(--primary) 0%, var(--primary) calc(var(--pct)*1%),var(--surface2) calc(var(--pct)*1%) 100%);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;flex-shrink:0;
+}
+.score-circle-inner{
+  width:56px;height:56px;border-radius:50%;
+  background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.score-circle-val{font-size:17px;font-weight:800;line-height:1;color:var(--text)}
+.score-circle-max{font-size:10px;color:var(--text-faint)}
+.score-stats{flex:1}
+.stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.stat-label{font-size:12px;color:var(--text-muted)}
+.stat-value{font-size:13px;font-weight:700;color:var(--text)}
+.mini-bar{height:5px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-top:2px}
+.mini-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),#60a5fa);border-radius:99px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* Criteria bars */
+.criteria-bar-list{display:flex;flex-direction:column;gap:8px}
+.cb-item{display:flex;align-items:center;gap:8px}
+.cb-name{font-size:11px;color:var(--text-muted);width:78px;flex-shrink:0}
+.cb-track{flex:1;height:6px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.cb-fill{height:100%;background:linear-gradient(90deg,var(--primary),#60a5fa);border-radius:99px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.cb-val{font-size:11px;font-weight:700;color:var(--text-muted);width:22px;text-align:right;flex-shrink:0}
+
+/* Sidebar progress */
+.sidebar-progress{padding:16px 20px;border-bottom:1px solid var(--border)}
+.progress-track{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#38bdf8);border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* Stall chips */
+.stall-chips{padding:12px 20px 8px;border-bottom:1px solid var(--border)}
+.chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.stall-chip{
+  padding:4px 10px;border-radius:99px;
+  font-size:11px;font-weight:700;
+  background:var(--surface2);
+  color:var(--text-muted);
+  border:1px solid var(--border);
+  cursor:pointer;transition:.15s;
+}
+.stall-chip:hover{border-color:var(--primary);color:var(--primary)}
+.stall-chip.active{background:var(--primary-glow);color:var(--primary);border-color:var(--primary)}
+
+/* Sidebar actions */
+.sidebar-actions{padding:16px 20px;margin-top:auto;border-top:1px solid var(--border)}
+
+/* ─── Main Area ─── */
+.page-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+.page-title-group{}
+.page-title{
+  font-family:'Playfair Display',serif;
+  font-size:26px;font-weight:800;
+  line-height:1.2;color:var(--text);
+}
+.page-subtitle{font-size:13px;color:var(--text-muted);margin-top:4px}
+.stall-badge{
+  padding:8px 16px;border-radius:99px;
+  background:var(--primary-glow);
+  color:var(--primary);
+  font-size:13px;font-weight:700;
+  border:1px solid rgba(59,130,246,.2);
+}
+
+/* ─── Nav Tabs ─── */
+.nav-tabs{
+  display:flex;gap:4px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:4px;
+  margin-bottom:24px;
+}
+.nav-tab{
+  flex:1;padding:9px;border-radius:10px;
+  font-size:12px;font-weight:700;
+  color:var(--text-muted);
+  background:transparent;border:none;
+  cursor:pointer;transition:.15s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.nav-tab .icon{font-size:16px}
+.nav-tab.active{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+
+/* ─── Cards ─── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:22px;
+  margin-bottom:16px;
+  animation:fadeUp .35s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card-title{font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title .icon{font-size:16px}
+
+/* ─── Form ─── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 100px;gap:12px;margin-bottom:12px}
+.form-full{margin-bottom:12px}
+.form-group{}
+label{display:block;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.field{
+  width:100%;padding:11px 14px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;transition:.2s;
+}
+.field:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+.field::placeholder{color:var(--text-faint)}
+textarea.field{min-height:80px;resize:vertical;line-height:1.5}
+select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+
+/* ─── Star Scoring ─── */
+.criteria-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.criterion-card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  transition:.2s;
+}
+.criterion-card:hover{border-color:var(--border-light)}
+.criterion-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.criterion-name{font-size:13px;font-weight:700;color:var(--text)}
+.criterion-score{
+  font-family:'DM Mono',monospace;
+  font-size:13px;font-weight:500;
+  color:var(--primary);
+  background:var(--primary-glow);
+  padding:3px 10px;border-radius:99px;
+  border:1px solid rgba(59,130,246,.2);
+  min-width:40px;text-align:center;
+}
+.stars{display:flex;gap:6px}
+.star-btn{
+  width:42px;height:38px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+  font-size:18px;
+  cursor:pointer;transition:.15s;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-faint);
+}
+.star-btn:hover:not(:disabled){transform:scale(1.1);border-color:var(--gold);background:var(--gold-soft)}
+.star-btn.active{
+  border-color:var(--gold);
+  background:var(--gold-soft);
+  color:var(--gold);
+}
+.star-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* ─── Buttons ─── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 18px;border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:700;
+  cursor:pointer;transition:.15s;border:none;
+  white-space:nowrap;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 16px rgba(59,130,246,.35)}
+.btn-primary:hover:not(:disabled){background:var(--primary-dark);box-shadow:0 6px 20px rgba(59,130,246,.45)}
+.btn-success{background:var(--success-soft);color:var(--success);border:1px solid rgba(16,185,129,.25)}
+.btn-ghost{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
+.btn-ghost:hover:not(:disabled){color:var(--text);border-color:var(--border-light)}
+.btn-warn{background:var(--warn-soft);color:var(--warn);border:1px solid rgba(245,158,11,.25)}
+.btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(239,68,68,.2)}
+.btn-sm{padding:7px 12px;font-size:12px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ─── Notices ─── */
+.draft-notice{
+  padding:10px 14px;border-radius:10px;
+  background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);
+  color:var(--warn);font-size:13px;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.lock-banner{
+  padding:12px 16px;border-radius:10px;
+  background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
+  color:var(--success);font-size:13px;font-weight:600;
+  margin-bottom:12px;display:flex;align-items:center;gap:8px;
+}
+
+/* ─── Right Column ─── */
+.right-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:18px;
+  margin-bottom:14px;
+  animation:fadeUp .35s ease both;
+}
+.right-card-title{font-size:12px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* Leader cards */
+.leader-item{
+  padding:12px;border-radius:var(--radius);
+  border:1px solid var(--border);
+  margin-bottom:8px;cursor:pointer;transition:.15s;
+}
+.leader-item:hover{border-color:var(--border-light);background:var(--surface2)}
+.leader-item.gold{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.25)}
+.leader-item.silver{background:rgba(148,163,184,.06);border-color:rgba(148,163,184,.2)}
+.leader-item.bronze{background:rgba(205,124,59,.06);border-color:rgba(205,124,59,.2)}
+.leader-name{font-size:13px;font-weight:700}
+.leader-meta{font-size:11px;color:var(--text-muted);margin-top:3px}
+.leader-score{font-family:'DM Mono',monospace;font-size:16px;font-weight:700}
+.leader-score.gold{color:var(--gold)}
+.leader-score.silver{color:var(--silver)}
+.leader-score.bronze{color:var(--bronze)}
+
+/* Rank list */
+.rank-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:var(--radius);
+  border:1px solid var(--border);
+  margin-bottom:8px;cursor:pointer;transition:.15s;
+}
+.rank-item:hover{border-color:var(--border-light);background:var(--surface2)}
+.rank-num{
+  font-family:'DM Mono',monospace;font-size:13px;font-weight:700;
+  width:24px;text-align:center;color:var(--text-faint);flex-shrink:0;
+}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-dept{font-size:11px;color:var(--text-muted)}
+.rank-score{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--primary);flex-shrink:0}
+
+/* Saved list */
+.saved-item{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  cursor:pointer;transition:.15s;
+}
+.saved-item:hover{border-color:var(--border-light);background:var(--surface2)}
+.saved-item.current{border-color:var(--primary);background:var(--primary-glow)}
+.saved-item-title{font-size:14px;font-weight:700}
+.saved-item-meta{font-size:11px;color:var(--text-muted);margin-top:3px}
+.saved-score-badge{
+  font-family:'DM Mono',monospace;
+  font-size:13px;font-weight:700;
+  padding:4px 10px;border-radius:99px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  flex-shrink:0;
+}
+
+/* Winner screen */
+.winner-card-wrap{
+  background:linear-gradient(135deg,rgba(245,158,11,.06),var(--surface),rgba(59,130,246,.06));
+  border:1px solid rgba(245,158,11,.2);
+  border-radius:var(--radius-lg);
+  padding:24px;margin-bottom:16px;
+}
+.winner-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.winner-cell{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;background:var(--surface);
+}
+.winner-cell.gold{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.3)}
+.winner-cell.silver{background:rgba(148,163,184,.06);border-color:rgba(148,163,184,.25)}
+.winner-cell.bronze{background:rgba(205,124,59,.06);border-color:rgba(205,124,59,.25)}
+.winner-label{font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px}
+.winner-name{font-size:16px;font-weight:800}
+.winner-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+/* Verdict pill */
+.verdict-excellent{background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.verdict-very-good{background:rgba(59,130,246,.12);color:var(--primary);border:1px solid rgba(59,130,246,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.verdict-good{background:rgba(99,102,241,.12);color:#818cf8;border:1px solid rgba(99,102,241,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.verdict-promising{background:rgba(245,158,11,.12);color:var(--warn);border:1px solid rgba(245,158,11,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.verdict-needs{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.2);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+
+/* Empty state */
+.empty-state{
+  text-align:center;padding:28px;
+  color:var(--text-faint);
+  border:1px dashed var(--border);
+  border-radius:var(--radius);
+  font-size:13px;
+}
+.empty-icon{font-size:28px;margin-bottom:8px}
+
+/* Toast */
+#toast-container{
+  position:fixed;bottom:24px;right:24px;
+  z-index:9999;display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;
+}
+.toast{
+  padding:12px 18px;border-radius:12px;
+  font-size:13px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+  backdrop-filter:blur(12px);
+  border:1px solid;
+  animation:toastIn .25s ease both;
+  pointer-events:auto;
+  display:flex;align-items:center;gap:8px;
+  max-width:280px;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.toast.fade-out{animation:toastOut .3s ease both}
+@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(8px)}}
+.toast-info{background:rgba(30,41,59,.95);border-color:var(--border);color:var(--text)}
+.toast-success{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.3);color:#34d399}
+.toast-warn{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.3);color:#fbbf24}
+.toast-danger{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:#f87171}
+
+/* Divider */
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+/* Keyboard hint */
+.kbd{
+  display:inline-block;padding:2px 6px;border-radius:5px;
+  font-size:10px;font-family:'DM Mono',monospace;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text-faint);
+}
+
+/* Remark textarea */
+.remark-area{
+  position:relative;
+}
+.remark-gen-btn{
+  position:absolute;right:10px;top:10px;
+}
+
+/* Tab panels */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Mobile */
+@media (max-width:1100px){.right-col{display:none}}
+@media (max-width:860px){
+  .sidebar{display:none}
+  .main{padding:16px;max-width:100%}
+  .form-grid-3{grid-template-columns:1fr 1fr}
+  .winner-grid{grid-template-columns:1fr}
+}
+@media (max-width:580px){
+  .form-grid,.form-grid-3{grid-template-columns:1fr}
+  .stars{flex-wrap:wrap}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:99px}
+
+/* Animations for score updates */
+@keyframes scorePop{0%{transform:scale(1.2);color:var(--gold)}100%{transform:scale(1);color:var(--primary)}}
+.score-pop{animation:scorePop .3s ease}
+
+.section-divider{
+  font-size:11px;font-weight:700;
+  color:var(--text-faint);
+  text-transform:uppercase;letter-spacing:.08em;
+  margin:20px 0 10px;
+  display:flex;align-items:center;gap:10px;
+}
+.section-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* Inline save status */
+.save-status{font-size:11px;color:var(--text-faint);display:flex;align-items:center;gap:4px}
+.save-dot{width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex-shrink:0}
+.save-dot.saved{background:var(--success)}
+.save-dot.unsaved{background:var(--warn);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.footer{
+  text-align:center;padding:20px;
+  font-size:11px;color:var(--text-faint);
+  border-top:1px solid var(--border);
+  margin-top:8px;
+}
+
+/* Report overlay close button */
+.report-close-bar{
+  position:sticky;top:0;z-index:10;
+  background:#1e3a5f;color:#fff;
+  padding:10px 16px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+@media print{
+  body > *:not(#reportOverlay){display:none!important}
+  #reportOverlay{display:flex!important;position:fixed!important;inset:0!important;background:#fff!important}
+  #reportOverlay > div:first-child{display:none!important}
+  #reportContent{overflow:visible!important;background:#fff!important;padding:0!important}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-icon">🏆</div>
+        <div>
+          <div>Expo Judge Pro</div>
+          <div style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'DM Sans',sans-serif">v10.0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-meta">
+      <div class="meta-label">Judge Info</div>
+      <input class="meta-field" id="judgeName" placeholder="Judge Name">
+      <input class="meta-field" id="panelName" placeholder="Panel / Committee">
+      <input class="meta-field" id="expoName" placeholder="Expo Name">
+    </div>
+
+    <div class="sidebar-scores">
+      <div class="meta-label" style="margin-bottom:12px">Current Score</div>
+      <div class="score-circle-wrap">
+        <div class="score-circle" id="scoreCircle" style="--pct:80">
+          <div class="score-circle-inner">
+            <span class="score-circle-val" id="totalDisplay">20</span>
+            <span class="score-circle-max">/ 25</span>
+          </div>
+        </div>
+        <div class="score-stats">
+          <div class="stat-row">
+            <span class="stat-label">Average</span>
+            <span class="stat-value" id="averageDisplay">4.0</span>
+          </div>
+          <div class="mini-bar"><div class="mini-bar-fill" id="avgBar" style="width:80%"></div></div>
+          <div class="stat-row" style="margin-top:8px">
+            <span class="stat-label">Stalls</span>
+            <span class="stat-value" id="stallCount">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="criteria-bar-list" id="sidebarBars"></div>
+    </div>
+
+    <div class="sidebar-progress">
+      <div class="meta-label">Judging Progress</div>
+      <div class="progress-track" style="margin-top:8px">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-faint);margin-top:6px" id="progressText">0 stalls saved</div>
+    </div>
+
+    <div class="stall-chips">
+      <div class="meta-label">Saved Stalls</div>
+      <div class="chips-wrap" id="stallChips"></div>
+    </div>
+
+    <div class="sidebar-actions">
+      <div id="saveStatusSidebar" class="save-status" style="margin-bottom:10px">
+        <div class="save-dot" id="saveDot"></div>
+        <span id="saveStatusText">Not saved</span>
+      </div>
+      <div class="btns" style="flex-direction:column;gap:6px">
+        <div class="btns" style="gap:6px">
+          <button class="btn btn-ghost btn-sm" id="prevBtn" type="button">◀ Prev</button>
+          <button class="btn btn-ghost btn-sm" id="nextBtn" type="button">Next ▶</button>
+          <button class="btn btn-ghost btn-sm" id="newBtn" type="button">＋ New</button>
+        </div>
+        <div id="lockBanner" class="lock-banner" style="display:none;font-size:12px">🔒 Judgement locked</div>
+        <button class="btn btn-danger btn-sm" id="clearBtn" type="button">Clear All Saved</button>
+        <button class="btn btn-warn btn-sm" id="unlockBtn" type="button" style="display:none">🔄 Reopen Judgement</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Main ─── -->
+  <main class="main">
+    <div class="page-header">
+      <div class="page-title-group">
+        <div class="page-title">Stall Evaluation</div>
+        <div class="page-subtitle">Engineering Expo Judging System</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="stall-badge" id="stallCounter">New Stall</div>
+        <div id="draftNotice" class="draft-notice" style="display:none;font-size:12px">📋 Unsaved draft restored</div>
+      </div>
+    </div>
+
+    <!-- Nav Tabs -->
+    <div class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" data-tab="form" type="button"><span class="icon">📝</span><span>Entry</span></button>
+      <button class="nav-tab" data-tab="leaderboard" type="button"><span class="icon">🏆</span><span>Results</span></button>
+      <button class="nav-tab" data-tab="saved" type="button"><span class="icon">📋</span><span>Saved</span></button>
+      <button class="nav-tab" data-tab="session" type="button"><span class="icon">⚙️</span><span>Session</span></button>
+    </div>
+
+    <!-- Tab: Entry Form -->
+    <div class="tab-panel active" id="tab-form">
+      <div class="card" id="judgeInfoCard">
+        <div class="card-title"><span class="icon">👤</span> Judge Info <span style="font-size:11px;color:var(--text-faint);font-weight:400;margin-left:auto">Shared across all stalls</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="judgeNameMain">Judge Name</label>
+            <input class="field" id="judgeNameMain" placeholder="Your full name">
+          </div>
+          <div class="form-group">
+            <label for="panelNameMain">Panel / Committee</label>
+            <input class="field" id="panelNameMain" placeholder="e.g. Technical Panel A">
+          </div>
+        </div>
+        <div class="form-full">
+          <label for="expoNameMain">Expo Name</label>
+          <input class="field" id="expoNameMain" placeholder="e.g. National Engineering Project Expo 2026">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📋</span> Stall Details</div>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="stallName">Stall Name</label>
+            <input class="field" id="stallName" placeholder="Project / Stall name">
+          </div>
+          <div class="form-group">
+            <label for="department">Department</label>
+            <input class="field" id="department" placeholder="e.g. CSE">
+          </div>
+          <div class="form-group">
+            <label for="stallNo">Stall #</label>
+            <input class="field" id="stallNo" placeholder="42">
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="team">Team Members</label>
+            <input class="field" id="team" placeholder="Names of team members">
+          </div>
+          <div class="form-group">
+            <label for="verdict">Verdict</label>
+            <select class="field" id="verdict">
+              <option value="Excellent">Excellent</option>
+              <option value="Very Good">Very Good</option>
+              <option value="Good">Good</option>
+              <option value="Promising">Promising</option>
+              <option value="Needs Improvement">Needs Improvement</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">⭐</span> Star Scoring <span style="font-size:11px;color:var(--text-faint);font-weight:400;margin-left:auto">Tap 1–5 stars</span></div>
+        <div class="criteria-grid" id="criteria"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📝</span> Feedback Notes</div>
+        <div class="form-full">
+          <label for="strengths">Strengths</label>
+          <textarea class="field" id="strengths" placeholder="What stood out…"></textarea>
+        </div>
+        <div class="form-full">
+          <label for="improvements">Areas for Improvement</label>
+          <textarea class="field" id="improvements" placeholder="Suggestions…"></textarea>
+        </div>
+        <div class="form-full">
+          <label for="notes">Additional Notes</label>
+          <textarea class="field" id="notes" placeholder="Private notes…" style="min-height:60px"></textarea>
+        </div>
+        <div class="form-full remark-area">
+          <label for="remark">Formal Judge Remark</label>
+          <textarea class="field" id="remark" placeholder="Official remark for the report…"></textarea>
+          <button class="btn btn-ghost btn-sm remark-gen-btn" id="remarkBtn" type="button">✨ Generate</button>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div id="actionBar" style="position:sticky;bottom:0;background:rgba(15,23,42,.95);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:10px 0;margin-top:4px;z-index:10;transition:.3s">
+        <!-- Save actions — shown only when form is ready -->
+        <div id="saveActions" style="display:none;margin-bottom:8px;animation:fadeUp .25s ease both">
+          <div class="btns">
+            <button class="btn btn-primary" id="saveBtn" type="button">💾 Save</button>
+            <button class="btn btn-success" id="saveNextBtn" type="button">✅ Save & Next</button>
+            <button class="btn btn-warn" id="innovationBtn" type="button">🎯 Innovation</button>
+            <button class="btn btn-danger" id="deleteBtn" type="button">🗑 Delete</button>
+          </div>
+        </div>
+        <!-- Hint when form not ready -->
+        <div id="saveHint" style="font-size:12px;color:var(--text-faint);margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span>✏️</span><span>Still needed: Judge Name, Stall Name, Department, Team, Strengths, Improvements</span>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- Tab: Leaderboard -->
+    <div class="tab-panel" id="tab-leaderboard">
+      <div class="card">
+        <div class="card-title"><span class="icon">🥇</span> Top 3 Leaders</div>
+        <div id="leaderboard-main" class="list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🎯</span> Best Innovation</div>
+        <div id="innovationAward-main"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Auto Ranking</div>
+        <div id="rankingList-main" class="list"></div>
+      </div>
+      <!-- Winner screen -->
+      <div id="winnerScreenCard" style="display:none">
+        <div class="winner-card-wrap">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span style="font-size:24px">🏆</span>
+            <div>
+              <div style="font-size:18px;font-weight:800;font-family:'Playfair Display',serif">Winner Announcement</div>
+              <div style="font-size:12px;color:var(--text-muted)">Final results — you can still unlock and re-judge.</div>
+            </div>
+          </div>
+          <div class="winner-grid" id="winnerGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Saved -->
+    <div class="tab-panel" id="tab-saved">
+      <div class="card">
+        <div class="card-title"><span class="icon">📋</span> All Saved Stalls</div>
+        <div id="savedList" class="list"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Session -->
+    <div class="tab-panel" id="tab-session">
+      <div id="lockBanner2" class="lock-banner" style="display:none;margin-bottom:0">✅ Judgement ended. Edit any stall freely, then End Judgement again to regenerate the report.</div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="card-title"><span class="icon">🔒</span> Finalise Judgement</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6">When all stalls are judged, click <strong>End Judgement</strong> to lock in the results, display the winners screen, and enable the Judgement Report PDF.</p>
+        <div class="btns" style="flex-direction:column;gap:10px">
+          <button class="btn btn-primary" id="endBtn" type="button" style="justify-content:center;padding:14px">🔒 End Judgement</button>
+          <button class="btn btn-warn" id="reopenBtn" type="button" style="display:none;justify-content:center;padding:14px">🔄 Reopen &amp; Edit Judgement</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📄</span> Judgement Report PDF</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6" id="pdfStatusNote">End Judgement first to generate the Judgement Report PDF.</p>
+        <button class="btn btn-primary" id="pdfBtn" type="button" disabled style="width:100%;justify-content:center;padding:14px">📄 View &amp; Download Judgement Report</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Export Data</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6">Export all judging data as a CSV spreadsheet.</p>
+        <button class="btn btn-ghost" id="csvBtn" type="button" style="width:100%;justify-content:center;padding:14px">📊 Export CSV</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">🗑</span> Danger Zone</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6">Permanently delete all saved stall data. This cannot be undone.</p>
+        <button class="btn btn-danger" id="clearBtn2" type="button" style="width:100%;justify-content:center;padding:14px">🗑 Clear All Saved Data</button>
+      </div>
+    </div>
+
+    <div class="footer">Data persists in this browser until you Clear All Saved. &nbsp;·&nbsp; <span class="kbd">S</span> Save &nbsp;<span class="kbd">N</span> New &nbsp;<span class="kbd">←→</span> Navigate</div>
+  </main>
+
+  <!-- ─── Right column (desktop only) ─── -->
+  <aside class="right-col">
+    <div class="right-card">
+      <div class="right-card-title">🏆 Top 3</div>
+      <div id="leaderboard"></div>
+    </div>
+    <div class="right-card">
+      <div class="right-card-title">🎯 Best Innovation</div>
+      <div id="innovationAward"></div>
+    </div>
+    <div class="right-card">
+      <div class="right-card-title">📊 Ranking</div>
+      <div id="rankingList" style="max-height:320px;overflow-y:auto"></div>
+    </div>
+  </aside>
+</div>
+
+<div id="toast-container"></div>
+<div id="reportOverlay" style="display:none;position:fixed;inset:0;z-index:9999;flex-direction:column;background:#1e3a5f;">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1e3a5f;flex-shrink:0;flex-wrap:wrap">
+    <strong style="font-size:14px;color:#fff;flex:1">📄 Judgement Report</strong>
+    <button onclick="closePrintReport()" style="padding:8px 12px;background:transparent;color:#93c5fd;border:1px solid #3b82f6;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px">✕ Close</button>
+    <button onclick="printReport()" style="padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">🖨 Print / Save as PDF</button>
+  </div>
+  <div id="reportContent" style="flex:1;overflow-y:auto;background:#e5e7eb;padding:8px"></div>
+</div>
+
+<script>
+// ─── Constants ───
+const STORAGE_KEY="expo_judge_pro_v10";
+const DRAFT_KEY="expo_judge_pro_v10_draft";
+const END_KEY="expo_judge_pro_v10_end";
+const LOCK_KEY="expo_judge_pro_v10_lock";
+const META_KEY="expo_judge_pro_v10_meta";
+const CRITERIA=[["innovation","Innovation"],["practical","Practical Use"],["technical","Technical Quality"],["presentation","Presentation"],["future","Future Scope"]];
+let currentIndex=-1;
+let suppressDraftSave=false;
+
+// ─── Toast ───
+function toast(msg,type="info",dur=2800){
+  const el=document.createElement("div");
+  el.className=`toast toast-${type}`;
+  const icons={info:"ℹ️",success:"✅",warn:"⚠️",danger:"❌"};
+  el.innerHTML=`<span>${icons[type]||""}</span><span>${msg}</span>`;
+  document.getElementById("toast-container").appendChild(el);
+  setTimeout(()=>{el.classList.add("fade-out");setTimeout(()=>el.remove(),300)},dur);
+}
+
+// ─── Init ───
+function init(){
+  buildCriteria();attachEvents();restoreMeta();
+  resetForm();restoreDraftIfAny();
+  renderAll();updateSummary();updateHeader();syncPdfState();applyLockState();
+  initTabs();initKeyboard();
+  checkFormReady();
+  window.addEventListener("focus",()=>{renderAll();updateHeader();syncPdfState();applyLockState();checkFormReady();});
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){renderAll();updateHeader();syncPdfState();applyLockState();}});
+}
+
+// ─── Tabs ───
+function initTabs(){
+  document.querySelectorAll(".nav-tab").forEach(tab=>{
+    tab.addEventListener("click",()=>{
+      document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("tab-"+tab.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+// ─── Keyboard shortcuts ───
+function initKeyboard(){
+  document.addEventListener("keydown",e=>{
+    if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.tagName==="SELECT")return;
+    if(e.key==="s"||e.key==="S"){e.preventDefault();save(false);}
+    if(e.key==="n"||e.key==="N"){e.preventDefault();newStall();}
+    if(e.key==="ArrowLeft"){e.preventDefault();prev();}
+    if(e.key==="ArrowRight"){e.preventDefault();next();}
+  });
+}
+
+// ─── Build criteria ───
+function buildCriteria(){
+  const c=document.getElementById("criteria");c.innerHTML="";
+  CRITERIA.forEach(([key,label])=>{
+    const div=document.createElement("div");div.className="criterion-card";
+    div.innerHTML=`<div class="criterion-top"><span class="criterion-name">${label}</span><span class="criterion-score" id="${key}Val">4/5</span></div><div class="stars" id="${key}Stars"></div>`;
+    c.appendChild(div);
+    const row=div.querySelector(".stars");
+    for(let i=1;i<=5;i++){
+      const b=document.createElement("button");b.type="button";b.className="star-btn"+(i<=4?" active":"");
+      b.innerHTML="★";b.dataset.value=String(i);
+      b.addEventListener("click",()=>setScore(key,i));
+      row.appendChild(b);
+    }
+  });
+}
+
+// ─── Events ───
+function attachEvents(){
+  document.getElementById("saveBtn").addEventListener("click",()=>save(false));
+  document.getElementById("saveNextBtn").addEventListener("click",()=>save(true));
+  document.getElementById("remarkBtn").addEventListener("click",generateRemark);
+  document.getElementById("innovationBtn").addEventListener("click",markInnovationCandidate);
+  document.getElementById("prevBtn").addEventListener("click",prev);
+  document.getElementById("nextBtn").addEventListener("click",next);
+  document.getElementById("newBtn").addEventListener("click",newStall);
+  document.getElementById("deleteBtn").addEventListener("click",deleteEntry);
+  document.getElementById("csvBtn").addEventListener("click",exportCSV);
+  document.getElementById("pdfBtn").addEventListener("click",printFinalPDF);
+  document.getElementById("clearBtn").addEventListener("click",clearAll);
+  document.getElementById("endBtn").addEventListener("click",endJudgement);
+  document.getElementById("unlockBtn").addEventListener("click",unlockJudgement);
+  document.getElementById("reopenBtn").addEventListener("click",unlockJudgement);
+  document.getElementById("clearBtn2").addEventListener("click",clearAll);
+
+  ["stallName","department","stallNo","team","verdict","strengths","improvements","notes","remark"].forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener("input",()=>{saveDraft();setUnsaved();checkFormReady();});
+    el.addEventListener("change",()=>{saveDraft();setUnsaved();checkFormReady();});
+  });
+  // Sync sidebar ↔ main judge fields bidirectionally
+  const judgeFieldPairs=[["judgeName","judgeNameMain"],["panelName","panelNameMain"],["expoName","expoNameMain"]];
+  judgeFieldPairs.forEach(([sideId,mainId])=>{
+    const sideEl=document.getElementById(sideId);
+    const mainEl=document.getElementById(mainId);
+    if(sideEl){
+      sideEl.addEventListener("input",()=>{if(mainEl)mainEl.value=sideEl.value;saveDraft();saveMeta();setUnsaved();});
+      sideEl.addEventListener("change",()=>{if(mainEl)mainEl.value=sideEl.value;saveDraft();saveMeta();});
+    }
+    if(mainEl){
+      mainEl.addEventListener("input",()=>{if(sideEl)sideEl.value=mainEl.value;saveDraft();saveMeta();setUnsaved();checkFormReady();});
+      mainEl.addEventListener("change",()=>{if(sideEl)sideEl.value=mainEl.value;saveDraft();saveMeta();});
+    }
+  });
+  window.addEventListener("beforeunload",saveDraft);
+}
+
+// ─── Meta ───
+function getMetaValues(){
+  const jn=document.getElementById("judgeNameMain")||document.getElementById("judgeName");
+  const pn=document.getElementById("panelNameMain")||document.getElementById("panelName");
+  const en=document.getElementById("expoNameMain")||document.getElementById("expoName");
+  return{judgeName:jn?.value?.trim()||"",panelName:pn?.value?.trim()||"",expoName:en?.value?.trim()||""};
+}
+function setMetaValues(m){
+  [["judgeName","judgeNameMain"],["panelName","panelNameMain"],["expoName","expoNameMain"]].forEach(([sId,mId])=>{
+    const v=m[sId]||"";
+    const se=document.getElementById(sId);const me=document.getElementById(mId);
+    if(se)se.value=v;if(me)me.value=v;
+  });
+}
+function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(getMetaValues()));}
+function restoreMeta(){
+  try{const m=JSON.parse(localStorage.getItem(META_KEY)||"null");if(m)setMetaValues(m);}catch{}
+}
+
+// ─── Data ───
+function loadEntries(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");}catch{return[];}}
+function saveEntries(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}
+function loadDraft(){try{return JSON.parse(localStorage.getItem(DRAFT_KEY)||"null");}catch{return null;}}
+function clearDraft(){localStorage.removeItem(DRAFT_KEY);document.getElementById("draftNotice").style.display="none";}
+function saveDraft(){
+  if(suppressDraftSave)return;
+  const d=collectDraftData();
+  if(isDraftEmpty(d)){localStorage.removeItem(DRAFT_KEY);document.getElementById("draftNotice").style.display="none";return;}
+  localStorage.setItem(DRAFT_KEY,JSON.stringify({...d,savedAt:new Date().toLocaleString()}));
+}
+function collectDraftData(){
+  const ids=["stallName","department","stallNo","team","verdict","strengths","improvements","notes","remark"];
+  const d={};ids.forEach(id=>d[id]=(document.getElementById(id)||{}).value?.trim()||"");
+  const meta=getMetaValues();Object.assign(d,meta);
+  CRITERIA.forEach(([key])=>{const el=document.getElementById(key+"Val");d[key]=el?Number(el.textContent.split("/")[0]):4;});
+  return d;
+}
+function isDraftEmpty(d){return!d.judgeName&&!d.panelName&&!d.expoName&&!d.stallName&&!d.department&&!d.stallNo&&!d.team&&!d.strengths&&!d.improvements&&!d.notes&&!d.remark;}
+function restoreDraftIfAny(){
+  const draft=loadDraft();if(!draft)return;
+  suppressDraftSave=true;fillForm(draft);suppressDraftSave=false;
+  updateSummary();
+  const dn=document.getElementById("draftNotice");
+  dn.textContent="📋 Draft from "+(draft.savedAt||"earlier")+" restored.";
+  dn.style.display="flex";
+  toast("Draft restored from "+( draft.savedAt||"earlier session"),"warn");
+}
+function setScore(name,val){
+  const valEl=document.getElementById(name+"Val");
+  valEl.textContent=val+"/5";
+  valEl.classList.remove("score-pop");void valEl.offsetWidth;valEl.classList.add("score-pop");
+  document.getElementById(name+"Stars").querySelectorAll(".star-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.value)<=val));
+  updateSummary();setUnsaved();saveDraft();
+}
+function updateSummary(){
+  let total=0;
+  CRITERIA.forEach(([key])=>{const el=document.getElementById(key+"Val");if(el)total+=Number(el.textContent.split("/")[0]);});
+  document.getElementById("totalDisplay").textContent=String(total);
+  const avg=(total/CRITERIA.length).toFixed(1);
+  document.getElementById("averageDisplay").textContent=avg;
+  // Circle
+  const pct=Math.round((total/25)*100);
+  document.getElementById("scoreCircle").style.setProperty("--pct",pct);
+  document.getElementById("avgBar").style.width=(Number(avg)/5*100)+"%";
+  // Sidebar bars
+  renderSidebarBars();
+}
+function renderSidebarBars(){
+  const sb=document.getElementById("sidebarBars");if(!sb)return;
+  sb.innerHTML=CRITERIA.map(([key,label])=>{
+    const el=document.getElementById(key+"Val");
+    const v=el?Number(el.textContent.split("/")[0]):0;
+    return `<div class="cb-item"><span class="cb-name">${label}</span><div class="cb-track"><div class="cb-fill" style="width:${v*20}%"></div></div><span class="cb-val">${v}</span></div>`;
+  }).join("");
+}
+function renderProgress(){
+  const count=loadEntries().length;
+  document.getElementById("progressText").textContent=`${count} stall${count===1?"":"s"} saved`;
+  document.getElementById("stallCount").textContent=count;
+  document.getElementById("progressFill").style.width=Math.min(100,count*10)+"%";
+}
+function getData(){
+  const ids=["stallName","department","stallNo","team","verdict","strengths","improvements","notes","remark"];
+  const d={};ids.forEach(id=>d[id]=(document.getElementById(id)||{}).value?.trim()||"");
+  const meta=getMetaValues();Object.assign(d,meta);
+  d.total=Number(document.getElementById("totalDisplay").textContent);
+  d.average=Number(document.getElementById("averageDisplay").textContent);
+  d.updatedAt=new Date().toLocaleString();
+  d.innovationAwardCandidate=false;
+  CRITERIA.forEach(([key])=>{const el=document.getElementById(key+"Val");d[key]=el?Number(el.textContent.split("/")[0]):4;});
+  return d;
+}
+function fillForm(d){
+  ["stallName","department","stallNo","team","strengths","improvements","notes","remark"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=d[id]||"";});
+  const verdictEl=document.getElementById("verdict");if(verdictEl&&d.verdict)verdictEl.value=d.verdict;
+  setMetaValues(d);
+  CRITERIA.forEach(([key])=>setScore(key,d[key]||4));
+  updateSummary();checkFormReady();
+}
+function resetForm(){
+  suppressDraftSave=true;
+  ["stallName","department","stallNo","team","strengths","improvements","notes","remark"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  const v=document.getElementById("verdict");if(v)v.value="Excellent";
+  CRITERIA.forEach(([key])=>setScore(key,4));
+  updateSummary();suppressDraftSave=false;restoreMeta();
+}
+
+// ─── Save / Nav ───
+function setUnsaved(){document.getElementById("saveDot").className="save-dot unsaved";document.getElementById("saveStatusText").textContent="Unsaved changes";checkFormReady();}
+function setSaved(){document.getElementById("saveDot").className="save-dot saved";document.getElementById("saveStatusText").textContent="Saved";checkFormReady();}
+function checkFormReady(){
+  const jn=(document.getElementById("judgeNameMain")||{}).value?.trim()||"";
+  const sn=(document.getElementById("stallName")||{}).value?.trim()||"";
+  const dept=(document.getElementById("department")||{}).value?.trim()||"";
+  const team=(document.getElementById("team")||{}).value?.trim()||"";
+  const str=(document.getElementById("strengths")||{}).value?.trim()||"";
+  const imp=(document.getElementById("improvements")||{}).value?.trim()||"";
+  const ready=jn&&sn&&dept&&team&&str&&imp;
+  const saveActions=document.getElementById("saveActions");
+  const saveHint=document.getElementById("saveHint");
+  if(saveActions){saveActions.style.display=ready?"block":"none";}
+  if(saveHint){
+    if(ready){saveHint.style.display="none";return;}
+    saveHint.style.display="flex";
+    const missing=[];
+    if(!jn)missing.push("Judge Name");if(!sn)missing.push("Stall Name");
+    if(!dept)missing.push("Department");if(!team)missing.push("Team");
+    if(!str)missing.push("Strengths");if(!imp)missing.push("Improvements");
+    const hint=saveHint.querySelector("span:last-child");
+    if(hint)hint.textContent="Still needed: "+missing.join(", ");
+  }
+}
+function save(goNext){
+  const d=getData();
+  if(!d.stallName){d.stallName=d.stallNo?"Stall "+d.stallNo:"Unnamed Stall";document.getElementById("stallName").value=d.stallName;}
+  if(!d.judgeName){toast("Enter a judge name in the Judge Info section first","warn");return;}
+  if(!d.remark){d.remark=buildRemark(d.average);document.getElementById("remark").value=d.remark;}
+  saveMeta();
+  const arr=loadEntries();
+  if(currentIndex===-1){d.createdAt=new Date().toLocaleString();arr.push(d);currentIndex=arr.length-1;}
+  else{d.createdAt=arr[currentIndex].createdAt||new Date().toLocaleString();d.innovationAwardCandidate=!!arr[currentIndex].innovationAwardCandidate;arr[currentIndex]=d;}
+  saveEntries(arr);clearDraft();saveMeta();renderAll();restoreMeta();updateHeader();setSaved();
+  toast("Stall saved!","success");
+  if(goNext){
+    const keep=getMetaValues();
+    currentIndex=-1;resetForm();
+    setMetaValues(keep);
+    saveMeta();saveDraft();updateHeader();setUnsaved();
+    toast("Ready for next stall","info");
+  }
+}
+function markInnovationCandidate(){
+  const arr=loadEntries();if(currentIndex===-1){toast("Save stall first, then mark for innovation","warn");return;}
+  arr[currentIndex].innovationAwardCandidate=true;arr[currentIndex].updatedAt=new Date().toLocaleString();
+  saveEntries(arr);renderAll();toast("Marked as Innovation Candidate 🎯","success");
+}
+function newStall(){
+  const keep=getMetaValues();
+  currentIndex=-1;resetForm();
+  setMetaValues(keep);
+  clearDraft();saveMeta();restoreMeta();updateHeader();setUnsaved();toast("New blank stall ready","info");
+}
+function prev(){
+  const arr=loadEntries();if(!arr.length){toast("No saved stalls yet","warn");return;}
+  if(currentIndex===-1)currentIndex=arr.length-1;else currentIndex=Math.max(0,currentIndex-1);
+  suppressDraftSave=true;fillForm(arr[currentIndex]);suppressDraftSave=false;
+  clearDraft();restoreMeta();updateHeader();setSaved();
+}
+function next(){
+  const arr=loadEntries();if(!arr.length){toast("No saved stalls yet","warn");return;}
+  if(currentIndex===-1)currentIndex=0;else currentIndex=Math.min(arr.length-1,currentIndex+1);
+  suppressDraftSave=true;fillForm(arr[currentIndex]);suppressDraftSave=false;
+  clearDraft();restoreMeta();updateHeader();setSaved();
+}
+function deleteEntry(){
+  const arr=loadEntries();if(currentIndex===-1){toast("Open a saved stall first","warn");return;}
+  if(!confirm("Delete this stall?"))return;
+  const keep=getMetaValues();
+  arr.splice(currentIndex,1);saveEntries(arr);
+  if(!arr.length){currentIndex=-1;resetForm();setMetaValues(keep);saveDraft();}
+  else{currentIndex=Math.min(currentIndex,arr.length-1);suppressDraftSave=true;fillForm(arr[currentIndex]);suppressDraftSave=false;}
+  renderAll();restoreMeta();updateHeader();toast("Stall deleted","danger");
+}
+function openEntry(i){
+  const arr=loadEntries();currentIndex=i;
+  suppressDraftSave=true;fillForm(arr[i]);suppressDraftSave=false;
+  clearDraft();restoreMeta();updateHeader();setSaved();
+  window.scrollTo({top:0,behavior:"smooth"});
+  // Switch to form tab
+  document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+  document.querySelector('[data-tab="form"]').classList.add("active");
+  document.getElementById("tab-form").classList.add("active");
+}
+
+// ─── Sort ───
+function sortRanked(entries){
+  return [...entries].sort((a,b)=>{
+    if(Number(b.total)!==Number(a.total))return Number(b.total)-Number(a.total);
+    if(Number(b.innovation)!==Number(a.innovation))return Number(b.innovation)-Number(a.innovation);
+    return (a.stallName||"").localeCompare(b.stallName||"");
+  });
+}
+
+// ─── Render All ───
+function renderAll(){
+  const entries=loadEntries();
+  renderLeaderboard(entries);renderInnovationAward(entries);renderRanking(entries);
+  renderSavedEntries(entries);renderWinnerScreen(entries);renderStallChips(entries);renderProgress();
+}
+function renderStallChips(entries){
+  const wrap=document.getElementById("stallChips");if(!wrap)return;
+  if(!entries.length){wrap.innerHTML='<span style="font-size:11px;color:var(--text-faint)">None yet</span>';return;}
+  wrap.innerHTML=entries.map((e,i)=>`<div class="stall-chip${i===currentIndex?" active":""}" data-i="${i}">${escapeHtml(e.stallNo||String(i+1))}</div>`).join("");
+  wrap.querySelectorAll(".stall-chip").forEach(ch=>ch.addEventListener("click",()=>openEntry(Number(ch.dataset.i))));
+}
+function medalClass(i){return["gold","silver","bronze"][i]||""}
+function medalEmoji(i){return["🥇","🥈","🥉"][i]||""}
+function renderLeaderboard(entries){
+  const ranked=sortRanked(entries).slice(0,3);
+  const targets=["leaderboard","leaderboard-main"];
+  targets.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    if(!ranked.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>No stalls saved yet</div>';return;}
+    el.innerHTML=ranked.map((s,i)=>`<div class="leader-item ${medalClass(i)}" onclick="openEntry(${getEntryIdx(s,entries)})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="leader-name">${medalEmoji(i)} ${escapeHtml(s.stallName)}</div>
+          <div class="leader-meta">${escapeHtml(s.department||"")}${s.stallNo?" • Stall "+escapeHtml(s.stallNo):""}</div>
+        </div>
+        <div class="leader-score ${medalClass(i)}">${s.total}/25</div>
+      </div>
+    </div>`).join("");
+  });
+}
+function getEntryIdx(s,entries){
+  const i=entries.findIndex(e=>e.stallName===s.stallName&&e.createdAt===s.createdAt);
+  return i>=0?i:0;
+}
+function renderInnovationAward(entries){
+  if(!entries.length){["innovationAward","innovationAward-main"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div>No stalls yet</div>';});return;}
+  let candidates=entries.filter(x=>x.innovationAwardCandidate);
+  if(!candidates.length)candidates=entries;
+  candidates.sort((a,b)=>Number(b.innovation)-Number(a.innovation)||Number(b.total)-Number(a.total));
+  const s=candidates[0];
+  const html=`<div class="rank-item" style="border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)">
+    <span style="font-size:22px">🎯</span>
+    <div class="rank-info">
+      <div class="rank-name">${escapeHtml(s.stallName||"")}</div>
+      <div class="rank-dept">${escapeHtml(s.department||"")} ${s.stallNo?"• Stall "+escapeHtml(s.stallNo):""}</div>
+    </div>
+    <div class="rank-score" style="color:var(--gold)">⭐ ${s.innovation}/5</div>
+  </div>`;
+  ["innovationAward","innovationAward-main"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
+}
+function renderRanking(entries){
+  const ranked=sortRanked(entries);
+  const targets=["rankingList","rankingList-main"];
+  targets.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    if(!ranked.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div>No ranking yet</div>';return;}
+    el.innerHTML=ranked.map((s,i)=>`<div class="rank-item" onclick="openEntry(${getEntryIdx(s,entries)})">
+      <span class="rank-num">${i+1}</span>
+      <div class="rank-info">
+        <div class="rank-name">${escapeHtml(s.stallName)}</div>
+        <div class="rank-dept">${escapeHtml(s.department||"")} ${s.stallNo?"• "+escapeHtml(s.stallNo):""}${s.innovationAwardCandidate?" · 🎯":""}</div>
+      </div>
+      <div class="rank-score">${s.total}/25</div>
+    </div>`).join("");
+  });
+}
+function renderSavedEntries(entries){
+  const el=document.getElementById("savedList");if(!el)return;
+  if(!entries.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>No saved stalls yet</div>';return;}
+  el.innerHTML=entries.map((e,i)=>`<div class="saved-item${i===currentIndex?" current":""}" onclick="openEntry(${i})">
+    <div>
+      <div class="saved-item-title">${escapeHtml(e.stallName||"Unnamed")}</div>
+      <div class="saved-item-meta">${escapeHtml(e.department||"-")} ${e.stallNo?"• Stall "+escapeHtml(e.stallNo):""}</div>
+      <div class="saved-item-meta">Judge: ${escapeHtml(e.judgeName||"-")} ${e.innovationAwardCandidate?" · 🎯 Innovation":""}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div class="saved-score-badge">${e.total}/25</div>
+      <div class="${verdictClass(e.verdict)}">${escapeHtml(e.verdict||"-")}</div>
+    </div>
+  </div>`).join("");
+}
+function verdictClass(v){
+  if(v==="Excellent")return"verdict-excellent";
+  if(v==="Very Good")return"verdict-very-good";
+  if(v==="Good")return"verdict-good";
+  if(v==="Promising")return"verdict-promising";
+  return"verdict-needs";
+}
+function renderWinnerScreen(entries){
+  const ended=localStorage.getItem(END_KEY)==="yes";
+  const card=document.getElementById("winnerScreenCard");if(!card)return;
+  card.style.display=ended&&entries.length?"block":"none";
+  if(!(ended&&entries.length))return;
+  const ranked=sortRanked(entries);
+  const top3=ranked.slice(0,3);
+  let candidates=entries.filter(x=>x.innovationAwardCandidate);
+  if(!candidates.length)candidates=entries;
+  candidates.sort((a,b)=>Number(b.innovation)-Number(a.innovation)||Number(b.total)-Number(a.total));
+  const iw=candidates[0];
+  const cards=[];
+  if(top3[0])cards.push(`<div class="winner-cell gold"><div class="winner-label">🥇 Gold Winner</div><div class="winner-name">${escapeHtml(top3[0].stallName)}</div><div class="winner-sub">${escapeHtml(top3[0].department||"-")} · ${top3[0].total}/25</div></div>`);
+  if(top3[1])cards.push(`<div class="winner-cell silver"><div class="winner-label">🥈 Silver Winner</div><div class="winner-name">${escapeHtml(top3[1].stallName)}</div><div class="winner-sub">${escapeHtml(top3[1].department||"-")} · ${top3[1].total}/25</div></div>`);
+  if(top3[2])cards.push(`<div class="winner-cell bronze"><div class="winner-label">🥉 Bronze Winner</div><div class="winner-name">${escapeHtml(top3[2].stallName)}</div><div class="winner-sub">${escapeHtml(top3[2].department||"-")} · ${top3[2].total}/25</div></div>`);
+  if(iw)cards.push(`<div class="winner-cell"><div class="winner-label">🎯 Innovation Award</div><div class="winner-name">${escapeHtml(iw.stallName)}</div><div class="winner-sub">${escapeHtml(iw.department||"-")} · ⭐ ${iw.innovation}/5</div></div>`);
+  document.getElementById("winnerGrid").innerHTML=cards.join("");
+}
+
+// ─── Header ───
+function updateHeader(){
+  const count=loadEntries().length;
+  document.getElementById("stallCounter").textContent=currentIndex===-1?"New Stall":`Stall ${currentIndex+1} of ${count}`;
+}
+
+// ─── Remark ───
+function buildRemark(avg){
+  if(avg>4.5)return "Excellent project with outstanding implementation, strong technical depth, and clear practical relevance.";
+  if(avg>4.0)return "Very good project with a clear concept, solid execution, and meaningful real-world application.";
+  if(avg>3.0)return "Promising project with good potential. Further refinement in implementation and presentation is recommended.";
+  return "Sincere effort demonstrated. Significant improvements in technical depth and practical application are recommended.";
+}
+function generateRemark(){document.getElementById("remark").value=buildRemark(Number(document.getElementById("averageDisplay").textContent));saveDraft();toast("Remark generated","success");}
+
+// ─── Lock / End ───
+function syncPdfState(){
+  const ended=localStorage.getItem(END_KEY)==="yes";
+  document.getElementById("pdfBtn").disabled=!ended;
+  const note=document.getElementById("pdfStatusNote");
+  if(note)note.innerHTML=ended
+    ?'✅ Judgement ended. PDF ready. You can still reopen, edit, and end again.'
+    :'End Judgement first to generate the Judgement Report PDF.';
+  const endBtn=document.getElementById("endBtn");
+  if(endBtn){
+    endBtn.textContent=ended?"✅ Judgement Ended":"🔒 End Judgement";
+    endBtn.className=ended?"btn btn-success":"btn btn-primary";
+    endBtn.style.width="100%";endBtn.style.justifyContent="center";endBtn.style.padding="14px";
+  }
+  ["unlockBtn","reopenBtn"].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){btn.style.display=ended?"flex":"none";btn.style.width="100%";}
+  });
+  // Both lock banners
+  ["lockBanner","lockBanner2"].forEach(id=>{
+    const lb=document.getElementById(id);
+    if(lb)lb.style.display=ended?"flex":"none";
+  });
+  // Show a dot on Session tab when ended
+  const sessionTab=document.querySelector('[data-tab="session"]');
+  if(sessionTab){
+    let dot=sessionTab.querySelector(".session-dot");
+    if(ended&&!dot){
+      dot=document.createElement("span");dot.className="session-dot";
+      dot.style.cssText="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;margin-left:4px;vertical-align:middle";
+      sessionTab.querySelector("span:last-child").appendChild(dot);
+    } else if(!ended&&dot){dot.remove();}
+  }
+}
+function applyLockState(){
+  // No hard lock — judges can always edit. This function just ensures fields are enabled.
+  const fields=["stallName","department","stallNo","team","verdict","strengths","improvements","notes","remark","judgeName","panelName","expoName","judgeNameMain","panelNameMain","expoNameMain"];
+  fields.forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});
+  document.querySelectorAll(".star-btn").forEach(btn=>btn.disabled=false);
+  ["saveBtn","saveNextBtn","remarkBtn","innovationBtn","deleteBtn","newBtn","prevBtn","nextBtn"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});
+}
+function endJudgement(){
+  if(loadEntries().length===0){toast("Save at least one stall before ending","warn");return;}
+  localStorage.setItem(END_KEY,"yes");
+  localStorage.removeItem(LOCK_KEY);
+  saveMeta();syncPdfState();applyLockState();renderAll();
+  // Switch to results tab to show winners
+  document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+  const lbTab=document.querySelector('[data-tab="leaderboard"]');
+  if(lbTab)lbTab.classList.add("active");
+  const lbPanel=document.getElementById("tab-leaderboard");
+  if(lbPanel)lbPanel.classList.add("active");
+  toast("🏆 Judgement ended! Results ready. Go to Session tab for the PDF.","success",5000);
+}
+function unlockJudgement(){
+  localStorage.removeItem(END_KEY);localStorage.removeItem(LOCK_KEY);
+  syncPdfState();applyLockState();renderAll();
+  // Switch to Entry tab so judge can immediately edit
+  document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+  const entryTab=document.querySelector('[data-tab="form"]');
+  if(entryTab)entryTab.classList.add("active");
+  const entryPanel=document.getElementById("tab-form");
+  if(entryPanel)entryPanel.classList.add("active");
+  toast("🔓 Reopened. Edit stalls freely, then go to Session → End Judgement again.","info",5000);
+}
+function clearAll(){
+  if(!confirm("Clear ALL saved stall feedback? This cannot be undone."))return;
+  [STORAGE_KEY,DRAFT_KEY,END_KEY,LOCK_KEY,META_KEY].forEach(k=>localStorage.removeItem(k));
+  currentIndex=-1;resetForm();renderAll();updateHeader();syncPdfState();applyLockState();
+  document.getElementById("draftNotice").style.display="none";
+  toast("All saved data cleared","danger");
+}
+
+// ─── CSV ───
+function exportCSV(){
+  const arr=sortRanked(loadEntries());if(!arr.length){toast("No saved stalls to export","warn");return;}
+  const headers=["Rank","Stall Name","Department","Stall No","Team","Verdict","Innovation","Practical Use","Technical Quality","Presentation","Future Scope","Total","Average","Strengths","Improvements","Notes","Remark","Created At","Updated At"];
+  const rows=arr.map((s,i)=>[i+1,s.stallName,s.department,s.stallNo,s.team,s.verdict,s.innovation,s.practical,s.technical,s.presentation,s.future,s.total,s.average,s.strengths,s.improvements,s.notes,s.remark,s.createdAt,s.updatedAt]);
+  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="expo-judge-pro-v10.csv";a.click();URL.revokeObjectURL(url);
+  toast("CSV exported","success");
+}
+
+// ─── PDF ───
+function escapeHtml(str){return String(str??'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+function barRow(label,value){const w=Math.max(0,Math.min(100,(Number(value)||0)*20));return`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px"><span>${label}</span><span>${value}/5</span></div><div style="height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden"><div style="height:100%;width:${w}%;background:#2563eb"></div></div></div>`;}
+
+function printFinalPDF(){
+  if(localStorage.getItem(END_KEY)!=="yes"){toast("Click End Judgement first","warn");return;}
+  const entries=sortRanked(loadEntries());if(!entries.length){toast("No saved stalls to print","warn");return;}
+  const top3=entries.slice(0,3);
+  let candidates=entries.filter(x=>x.innovationAwardCandidate);
+  if(!candidates.length)candidates=entries;
+  candidates.sort((a,b)=>Number(b.innovation)-Number(a.innovation)||Number(b.total)-Number(a.total));
+  const iw=candidates[0];
+  const medalsLabel=["🥇 Gold","🥈 Silver","🥉 Bronze"];
+  const now=new Date().toLocaleString();
+
+  const reportHtml=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Judgement Report</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      background:#ffffff!important;color:#0f172a!important;
+      -webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body{padding:0}
+    /* ── Page sections ── */
+    .pg{padding:12mm 10mm;border-bottom:3px solid #2563eb;page-break-after:always;break-after:page}
+    .pg:last-child{page-break-after:auto;break-after:auto;border-bottom:none}
+    .pg-title{font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .pg-sub{font-size:12px;color:#475467;margin-bottom:14px}
+    /* ── Tables ── */
+    table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px}
+    th{background:#eff6ff;color:#1e3a8a;font-weight:700;padding:8px 10px;text-align:left;border:1px solid #bfdbfe;white-space:nowrap}
+    td{padding:8px 10px;border:1px solid #e2e8f0;color:#0f172a;vertical-align:middle}
+    .lbl{background:#f8fafc;font-weight:700;color:#374151;width:140px;white-space:nowrap}
+    .nowrap{white-space:nowrap}
+    .num{text-align:center;white-space:nowrap;font-weight:700}
+    /* ── Cards ── */
+    .cards{display:flex;gap:12px;margin-bottom:14px}
+    .card{flex:1;border:1px solid #e2e8f0;border-radius:10px;padding:10px}
+    .card .lv{font-size:11px;color:#64748b;margin-bottom:4px}
+    .card .val{font-size:28px;font-weight:900;color:#1d4ed8;line-height:1}
+    .card .val span{font-size:14px;color:#94a3b8;font-weight:400}
+    /* ── Score bars ── */
+    .bar-row{margin-bottom:8px}
+    .bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:3px;color:#374151}
+    .bar-track{height:8px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+    .bar-fill{height:100%;background:#2563eb;border-radius:99px}
+    /* ── Cover ── */
+    .cover-badge{display:inline-block;background:#dbeafe;color:#1d4ed8;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:800;margin-bottom:10px}
+    .cover-title{font-size:26px;font-weight:900;color:#0f172a;line-height:1.2;margin-bottom:6px}
+    .cover-meta{font-size:13px;color:#475467;margin-bottom:16px}
+    /* ── Medal colors ── */
+    .gold{background:#fffbeb;color:#92400e}
+    .silver{background:#f8fafc;color:#334155}
+    .bronze{background:#fff7ed;color:#9a3412}
+    /* ── Footer ── */
+    .pg-footer{margin-top:16px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}
+    .sig-line{margin-top:80px;border-top:1px solid #0f172a;width:240px;padding-top:6px;font-size:12px;color:#374151}
+    /* ── Chips ── */
+    .chip{display:inline-block;padding:2px 8px;border-radius:99px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:700;margin:2px}
+    @media print{
+      html,body{background:#fff!important}
+      .pg{border-color:#2563eb}
+    }
+  </style>
+  </head>
+  <body>
+  <div style="position:sticky;top:0;z-index:99;background:#1e3a5f;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap" class="no-print-bar">
+    <span style="font-size:13px;font-weight:700;flex:1">📄 Expo Judge Pro — Judgement Report</span>
+    <button onclick="window.print()" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🖨 Save as PDF</button>
+  </div>
+  <style>@media print{.no-print-bar{display:none!important}}</style>
+
+  <!-- Cover -->
+  <div class="pg">
+    <div class="cover-badge">Engineering Expo — Final Evaluation Report</div>
+    <div class="cover-title">${escapeHtml(entries[0]?.expoName||"Project Expo")}</div>
+    <div class="cover-meta">Digital judging summary prepared for official submission</div>
+    <table>
+      <tr><td class="lbl">Judge Name</td><td style="font-weight:700;font-size:15px">${escapeHtml(entries[0]?.judgeName||"-")}</td></tr>
+      <tr><td class="lbl">Panel / Committee</td><td style="font-weight:700;font-size:15px">${escapeHtml(entries[0]?.panelName||"-")}</td></tr>
+      <tr><td class="lbl">Date Generated</td><td>${now}</td></tr>
+      <tr><td class="lbl">Total Stalls Judged</td><td style="font-weight:800;font-size:20px;color:#1d4ed8">${entries.length}</td></tr>
+    </table>
+    <div style="font-weight:700;margin-bottom:8px;font-size:13px">Contestant List</div>
+    <table>
+      <tr><th style="width:36px">#</th><th>Stall Name</th><th>Department</th><th>Stall No</th></tr>
+      ${entries.map((s,i)=>`<tr><td class="num">${i+1}</td><td>${escapeHtml(s.stallName||"-")}</td><td>${escapeHtml(s.department||"-")}</td><td class="nowrap">${escapeHtml(s.stallNo||"-")}</td></tr>`).join("")}
+    </table>
+    <div class="pg-footer"><div>Generated: ${now}</div><div>Expo Judge Pro</div></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="pg">
+    <div class="pg-title">🏆 Top 3 Leaderboard</div>
+    <div class="pg-sub">Final ranked results by total score</div>
+    <table>
+      <tr><th>Medal</th><th>Stall Name</th><th>Dept</th><th>Stall #</th><th>Score</th><th>Avg</th><th>Verdict</th></tr>
+      ${[0,1,2].map(i=>{
+        const s=top3[i];
+        const cls=["gold","silver","bronze"][i]||"";
+        const medal=["🥇 Gold","🥈 Silver","🥉 Bronze"][i]||"-";
+        return s?`<tr class="${cls}">
+          <td class="nowrap" style="font-weight:700">${medal}</td>
+          <td>${escapeHtml(s.stallName||"-")}</td>
+          <td class="nowrap">${escapeHtml(s.department||"-")}</td>
+          <td class="num">${escapeHtml(s.stallNo||"-")}</td>
+          <td class="num">${s.total}/25</td>
+          <td class="num">${s.average}/5</td>
+          <td class="nowrap">${escapeHtml(s.verdict||"-")}</td>
+        </tr>`:`<tr><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
+      }).join("")}
+    </table>
+    <div style="font-weight:700;margin:14px 0 8px;font-size:14px">🎯 Best Innovation Award</div>
+    <table>
+      <tr><td class="lbl">Winning Stall</td><td style="font-weight:700">${escapeHtml(iw?.stallName||"-")}</td></tr>
+      <tr><td class="lbl">Department</td><td>${escapeHtml(iw?.department||"-")}</td></tr>
+      <tr><td class="lbl">Stall No</td><td>${escapeHtml(iw?.stallNo||"-")}</td></tr>
+      <tr><td class="lbl">Innovation Score</td><td style="font-weight:700">${iw?iw.innovation+"/5":"-"}</td></tr>
+      <tr><td class="lbl">Overall Score</td><td style="font-weight:700">${iw?iw.total+"/25":"-"}</td></tr>
+    </table>
+    <div class="pg-footer"><div>Expo Judge Pro</div><div>Page 2</div></div>
+  </div>
+
+  <!-- Full Ranking -->
+  <div class="pg">
+    <div class="pg-title">📊 Complete Ranking</div>
+    <div class="pg-sub">All stalls ranked by total score</div>
+    <table>
+      <tr><th>#</th><th>Stall Name</th><th>Dept</th><th>Inno</th><th>Total</th><th>Avg</th><th>Verdict</th></tr>
+      ${entries.map((s,i)=>`<tr>
+        <td class="num">${i+1}</td>
+        <td>${escapeHtml(s.stallName)}${s.innovationAwardCandidate?" 🎯":""}</td>
+        <td class="nowrap">${escapeHtml(s.department||"-")}</td>
+        <td class="num">${s.innovation}/5</td>
+        <td class="num">${s.total}/25</td>
+        <td class="num">${s.average}/5</td>
+        <td class="nowrap">${escapeHtml(s.verdict||"-")}</td>
+      </tr>`).join("")}
+    </table>
+    <div class="pg-footer"><div>Expo Judge Pro</div><div>Page 3</div></div>
+  </div>
+
+  <!-- Individual stall pages -->
+  ${entries.map((s,i)=>`<div class="pg">
+    <div class="pg-title">${i+1}. ${escapeHtml(s.stallName)}</div>
+    <div class="pg-sub">
+      <span class="chip">${escapeHtml(s.department||"-")}</span>
+      ${s.stallNo?`<span class="chip">Stall ${escapeHtml(s.stallNo)}</span>`:""}
+      ${s.innovationAwardCandidate?'<span class="chip">🎯 Innovation</span>':""}
+      ${s.verdict?`<span class="chip">${escapeHtml(s.verdict)}</span>`:""}
+    </div>
+    <div class="cards">
+      <div class="card"><div class="lv">Total Score</div><div class="val">${s.total}<span>/25</span></div></div>
+      <div class="card"><div class="lv">Average</div><div class="val">${s.average}<span>/5</span></div></div>
+    </div>
+    ${["Innovation","Practical Use","Technical Quality","Presentation","Future Scope"].map((lbl,li)=>{
+      const keys=["innovation","practical","technical","presentation","future"];
+      const v=Number(s[keys[li]])||0;
+      return`<div class="bar-row"><div class="bar-label"><span>${lbl}</span><span>${v}/5</span></div><div class="bar-track"><div class="bar-fill" style="width:${v*20}%"></div></div></div>`;
+    }).join("")}
+    <table style="margin-top:12px">
+      <tr><td class="lbl">Judge</td><td>${escapeHtml(s.judgeName||"-")}</td><td class="lbl">Team</td><td>${escapeHtml(s.team||"-")}</td></tr>
+      <tr><td class="lbl">Strengths</td><td colspan="3">${escapeHtml(s.strengths||"-")}</td></tr>
+      <tr><td class="lbl">Improvements</td><td colspan="3">${escapeHtml(s.improvements||"-")}</td></tr>
+      <tr><td class="lbl">Notes</td><td colspan="3">${escapeHtml(s.notes||"-")}</td></tr>
+      <tr><td class="lbl">Formal Remark</td><td colspan="3">${escapeHtml(s.remark||"-")}</td></tr>
+    </table>
+    <div class="pg-footer"><div>Expo Judge Pro</div><div>Page ${i+4}</div></div>
+  </div>`).join("")}
+
+  <!-- Sign off -->
+  <div class="pg">
+    <div class="pg-title">Official Judge Approval</div>
+    <div class="pg-sub">Final sign-off for the complete expo evaluation report</div>
+    <table style="margin-bottom:8mm">
+      <tr><td class="lbl">Judge Name</td><td>${escapeHtml(entries[0]?.judgeName||"")}</td></tr>
+      <tr><td class="lbl">Panel / Committee</td><td>${escapeHtml(entries[0]?.panelName||"")}</td></tr>
+      <tr><td class="lbl">Expo Name</td><td>${escapeHtml(entries[0]?.expoName||"")}</td></tr>
+      <tr><td class="lbl">Date</td><td>${now}</td></tr>
+      <tr><td class="lbl">Total Stalls</td><td>${entries.length}</td></tr>
+    </table>
+    <div class="sig-line">Judge Signature</div>
+    <div class="pg-footer"><div>Expo Judge Pro</div><div>Final Page</div></div>
+  </div>
+
+  </body></html>`
+
+  const overlay=document.getElementById("reportOverlay");
+  const rc=document.getElementById("reportContent");
+  // Extract body content from reportHtml to inject into page
+  const bodyMatch=reportHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const bodyContent=bodyMatch?bodyMatch[1]:reportHtml;
+  // Extract and inject report styles into a scoped style block
+  const styleMatch=reportHtml.match(/<style>([\s\S]*?)<\/style>/i);
+  const reportStyles=styleMatch?styleMatch[1]:"";
+  // Scope the styles to #reportContent to avoid bleeding into app
+  const scopedStyle=document.getElementById("reportScopedStyle")||document.createElement("style");
+  scopedStyle.id="reportScopedStyle";
+  // Prefix every rule with #reportContent
+  scopedStyle.textContent="#reportContent{"+reportStyles+"}";
+  document.head.appendChild(scopedStyle);
+  rc.innerHTML=bodyContent;
+  overlay.style.display="flex";
+  document.body.style.overflow="hidden";
+  // Store for download
+  window._reportHtml=reportHtml;
+  toast("📄 Report ready — tap 'Print / Save as PDF'","success",4000);
+}
+function printReport(){
+  if(!window._reportHtml){toast("Report not ready","warn");return;}
+  // Open in new tab — on GitHub Pages / real browser this always works
+  const w=window.open("","_blank");
+  if(w){
+    w.document.write(window._reportHtml);
+    w.document.close();
+    w.focus();
+    setTimeout(()=>w.print(),500);
+    return;
+  }
+  // Fallback: download as HTML file
+  try{
+    const blob=new Blob([window._reportHtml],{type:"text/html;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="judgement-report.html";
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+    toast("📥 Saved to Downloads — open in browser and print to PDF","success",6000);
+  }catch(e){toast("Please use browser share menu to print","info",5000);}
+}
+function closePrintReport(){
+  document.getElementById("reportOverlay").style.display="none";
+  document.body.style.overflow="";
+  const rc=document.getElementById("reportContent");
+  if(rc)rc.innerHTML="";
+  window._reportHtml=null;
+}
+
+init();
+</script>
+</body>
+</html>
