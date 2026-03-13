@@ -73,6 +73,18 @@ body::before{
 
 /* ─── Layout ─── */
 .app{display:flex;min-height:100vh;position:relative;z-index:1}
+/* PWA: push entire app below iOS status bar notch */
+@supports(padding-top: env(safe-area-inset-top)){
+  .app{
+    padding-top:env(safe-area-inset-top);
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+  /* Remove double-padding on mobile since .main already handles it */
+  @media(max-width:860px){
+    .app{padding-top:0}
+  }
+}
 .sidebar{
   width:280px;
   flex-shrink:0;
@@ -84,6 +96,7 @@ body::before{
   top:0;
   height:100vh;
   overflow-y:auto;
+  padding-top:env(safe-area-inset-top,0px);
 }
 .main{flex:1;min-width:0;padding:24px 28px;max-width:860px}
 .right-col{width:320px;flex-shrink:0;padding:24px 20px 24px 0}
@@ -478,7 +491,14 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 @media (max-width:1100px){.right-col{display:none}}
 @media (max-width:860px){
   .sidebar{display:none}
-  .main{padding:16px;max-width:100%}
+  .main{
+    padding:16px;
+    max-width:100%;
+    /* Push content below iOS status bar when installed as PWA */
+    padding-top:max(16px, env(safe-area-inset-top));
+    padding-left:max(16px, env(safe-area-inset-left));
+    padding-right:max(16px, env(safe-area-inset-right));
+  }
   .form-grid-3{grid-template-columns:1fr 1fr}
   .winner-grid{grid-template-columns:1fr}
 }
@@ -723,7 +743,7 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
       </div>
 
       <!-- Action bar -->
-      <div id="actionBar" style="position:sticky;bottom:0;background:rgba(15,23,42,.95);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:10px 0;margin-top:4px;z-index:10;transition:.3s">
+      <div id="actionBar" style="position:sticky;bottom:0;padding-bottom:max(12px,env(safe-area-inset-bottom));background:rgba(15,23,42,.95);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:10px 0;margin-top:4px;z-index:10;transition:.3s">
         <!-- Save actions — shown only when form is ready -->
         <div id="saveActions" style="display:none;margin-bottom:8px;animation:fadeUp .25s ease both">
           <div class="btns">
