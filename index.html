@@ -547,19 +547,11 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
 @media print{
-  /* Hide entire app, show only report content */
+  /* When printing, hide the app and show only the iframe report */
   body > *:not(#reportOverlay){display:none!important}
-  #reportOverlay{display:block!important;position:static!important;background:#fff!important;z-index:9999}
-  /* Hide the bottom action bar during print */
-  #reportOverlay > div:last-child{display:none!important}
-  /* Show report content full page */
-  #reportContent{
-    display:block!important;
-    overflow:visible!important;
-    background:#fff!important;
-    padding:0!important;
-    height:auto!important;
-  }
+  #reportOverlay{display:flex!important;position:fixed!important;inset:0!important;flex-direction:column!important}
+  #reportActionBar{display:none!important}
+  #reportFrame{flex:1!important;width:100%!important;height:100%!important;border:none!important}
 }
 </style>
 </head>
@@ -862,16 +854,13 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 
 <div id="toast-container"></div>
 <div id="reportOverlay" style="display:none;position:fixed;inset:0;z-index:9999;flex-direction:column;background:#1e3a5f;">
-  <!-- Report content scrollable area — padded top so content doesn't hide under status bar -->
-  <div id="reportContent" style="flex:1;overflow-y:auto;background:#e5e7eb;padding:8px;padding-top:env(safe-area-inset-top,8px)"></div>
-  <!-- Action bar BOTTOM — always visible, never hidden by iOS browser chrome -->
+  <!-- Isolated iframe — completely separate from app CSS, no dark theme bleed -->
+  <iframe id="reportFrame" style="flex:1;border:none;width:100%;background:#fff" sandbox="allow-same-origin allow-scripts allow-modals"></iframe>
+  <!-- Action bar BOTTOM -->
   <div id="reportActionBar" style="display:flex;align-items:center;gap:8px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:#1e3a5f;flex-shrink:0;flex-wrap:wrap;border-top:1px solid #2563eb;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
     <strong style="font-size:13px;color:#93c5fd;flex:1">📄 Judgement Report</strong>
     <button onclick="closePrintReport()" style="padding:10px 16px;background:transparent;color:#93c5fd;border:1.5px solid #3b82f6;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px">✕ Close</button>
     <button onclick="printReport()" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:0 2px 12px rgba(37,99,235,.5)">🖨 Print / Save as PDF</button>
-  </div>
-  <div style="background:#1e40af;padding:6px 16px;font-size:11px;color:#bfdbfe;flex-shrink:0;text-align:center">
-    After printing, tap <strong style="color:#fff">✕ Close</strong> below to return to the app
   </div>
 </div>
 
@@ -1483,6 +1472,12 @@ function printFinalPDF(){
   </style>
   </head>
   <body>
+  <script>
+    // Listen for print trigger from parent page
+    window.addEventListener('message',function(e){
+      if(e.data==='doPrint'){window.focus();window.print();}
+    });
+  </script>
   <!-- Cover -->
   <div class="pg">
     <div class="cover-badge">Engineering Expo — Final Evaluation Report</div>
@@ -1599,39 +1594,32 @@ function printFinalPDF(){
   </body></html>`
 
   const overlay=document.getElementById("reportOverlay");
-  const rc=document.getElementById("reportContent");
   // Extract body content from reportHtml to inject into page
-  const bodyMatch=reportHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  const bodyContent=bodyMatch?bodyMatch[1]:reportHtml;
   // Extract and inject report styles into a scoped style block
-  const styleMatch=reportHtml.match(/<style>([\s\S]*?)<\/style>/i);
-  const reportStyles=styleMatch?styleMatch[1]:"";
-  // Inject report styles into a scoped block
-  const scopedStyle=document.getElementById("reportScopedStyle")||document.createElement("style");
-  scopedStyle.id="reportScopedStyle";
-  // Apply report styles scoped to reportContent only
-  // Simple style injection — report has its own explicit styles, just inject as-is
-  // The report HTML already has background:#fff !important so no dark theme bleed
-  scopedStyle.textContent=reportStyles;
-  document.head.appendChild(scopedStyle);
-  rc.innerHTML=bodyContent;
+    const frame=document.getElementById("reportFrame");
   overlay.style.display="flex";
   document.body.style.overflow="hidden";
-  // Store for download
+  // srcdoc = fully isolated iframe — zero CSS bleed from dark app theme
+  frame.srcdoc=reportHtml;
   window._reportHtml=reportHtml;
   toast("📄 Report ready — tap 'Print / Save as PDF'","success",4000);
 }
 function printReport(){
-  if(!window._reportHtml){toast("Report not ready","warn");return;}
-  // Print directly from this page — @media print hides everything except reportContent
-  // This way iOS print sheet dismisses back to the report overlay (Close button still visible)
-  window.print();
+  const frame=document.getElementById("reportFrame");
+  if(!frame||!frame.srcdoc){toast("Report not ready","warn");return;}
+  // Send message into iframe — the report HTML listens and calls its own window.print()
+  // This is the only method that works on iOS Safari for iframe printing
+  try{
+    frame.contentWindow.postMessage("doPrint","*");
+  }catch(e){}
+  // Also try direct call as fallback (works on Android/desktop)
+  try{frame.contentWindow.print();}catch(e){}
 }
 function closePrintReport(){
   document.getElementById("reportOverlay").style.display="none";
   document.body.style.overflow="";
-  const rc=document.getElementById("reportContent");
-  if(rc)rc.innerHTML="";
+  const frame=document.getElementById("reportFrame");
+  if(frame)frame.srcdoc="";
   window._reportHtml=null;
 }
 
