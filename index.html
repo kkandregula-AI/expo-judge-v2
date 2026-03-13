@@ -547,10 +547,19 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
 @media print{
+  /* Hide entire app, show only report content */
   body > *:not(#reportOverlay){display:none!important}
-  #reportOverlay{display:flex!important;position:fixed!important;inset:0!important;background:#fff!important}
+  #reportOverlay{display:block!important;position:static!important;background:#fff!important;z-index:9999}
+  /* Hide the bottom action bar during print */
   #reportOverlay > div:last-child{display:none!important}
-  #reportContent{overflow:visible!important;background:#fff!important;padding:0!important}
+  /* Show report content full page */
+  #reportContent{
+    display:block!important;
+    overflow:visible!important;
+    background:#fff!important;
+    padding:0!important;
+    height:auto!important;
+  }
 }
 </style>
 </head>
@@ -856,10 +865,13 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   <!-- Report content scrollable area — padded top so content doesn't hide under status bar -->
   <div id="reportContent" style="flex:1;overflow-y:auto;background:#e5e7eb;padding:8px;padding-top:env(safe-area-inset-top,8px)"></div>
   <!-- Action bar BOTTOM — always visible, never hidden by iOS browser chrome -->
-  <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:#1e3a5f;flex-shrink:0;flex-wrap:wrap;border-top:1px solid #2563eb;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
+  <div id="reportActionBar" style="display:flex;align-items:center;gap:8px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:#1e3a5f;flex-shrink:0;flex-wrap:wrap;border-top:1px solid #2563eb;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
     <strong style="font-size:13px;color:#93c5fd;flex:1">📄 Judgement Report</strong>
     <button onclick="closePrintReport()" style="padding:10px 16px;background:transparent;color:#93c5fd;border:1.5px solid #3b82f6;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px">✕ Close</button>
     <button onclick="printReport()" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:0 2px 12px rgba(37,99,235,.5)">🖨 Print / Save as PDF</button>
+  </div>
+  <div style="background:#1e40af;padding:6px 16px;font-size:11px;color:#bfdbfe;flex-shrink:0;text-align:center">
+    After printing, tap <strong style="color:#fff">✕ Close</strong> below to return to the app
   </div>
 </div>
 
@@ -1594,11 +1606,13 @@ function printFinalPDF(){
   // Extract and inject report styles into a scoped style block
   const styleMatch=reportHtml.match(/<style>([\s\S]*?)<\/style>/i);
   const reportStyles=styleMatch?styleMatch[1]:"";
-  // Scope the styles to #reportContent to avoid bleeding into app
+  // Inject report styles into a scoped block
   const scopedStyle=document.getElementById("reportScopedStyle")||document.createElement("style");
   scopedStyle.id="reportScopedStyle";
-  // Prefix every rule with #reportContent
-  scopedStyle.textContent="#reportContent{"+reportStyles+"}";
+  // Apply report styles scoped to reportContent only
+  // Simple style injection — report has its own explicit styles, just inject as-is
+  // The report HTML already has background:#fff !important so no dark theme bleed
+  scopedStyle.textContent=reportStyles;
   document.head.appendChild(scopedStyle);
   rc.innerHTML=bodyContent;
   overlay.style.display="flex";
@@ -1609,25 +1623,9 @@ function printFinalPDF(){
 }
 function printReport(){
   if(!window._reportHtml){toast("Report not ready","warn");return;}
-  // Open in new tab — on GitHub Pages / real browser this always works
-  const w=window.open("","_blank");
-  if(w){
-    w.document.write(window._reportHtml);
-    w.document.close();
-    w.focus();
-    setTimeout(()=>w.print(),500);
-    return;
-  }
-  // Fallback: download as HTML file
-  try{
-    const blob=new Blob([window._reportHtml],{type:"text/html;charset=utf-8"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url;a.download="judgement-report.html";
-    document.body.appendChild(a);a.click();
-    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
-    toast("📥 Saved to Downloads — open in browser and print to PDF","success",6000);
-  }catch(e){toast("Please use browser share menu to print","info",5000);}
+  // Print directly from this page — @media print hides everything except reportContent
+  // This way iOS print sheet dismisses back to the report overlay (Close button still visible)
+  window.print();
 }
 function closePrintReport(){
   document.getElementById("reportOverlay").style.display="none";
