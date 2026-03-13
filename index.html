@@ -1473,11 +1473,10 @@ function printFinalPDF(){
   </head>
   <body>
   <script>
-    // Listen for print trigger from parent page
     window.addEventListener('message',function(e){
       if(e.data==='doPrint'){window.focus();window.print();}
     });
-  </script>
+  <\/script>
   <!-- Cover -->
   <div class="pg">
     <div class="cover-badge">Engineering Expo — Final Evaluation Report</div>
